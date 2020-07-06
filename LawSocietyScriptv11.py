@@ -64,30 +64,29 @@ for pagenumber in range (1,pages):
              noAccreds = container.find("div", {"class":"accreditations hidden-phone"}).strong.text
          except:
              noAccreds = "no accreditations given"
-             
-        # company page
-        # myurl_2 = "https://solicitors.lawsociety.org.uk/search/results?Location="+ location + "&Pro=False&Page=" + str(1)
-        # page_data2 = urlreader_to_soup(myurl_2) # file name and html parse
-        # containers = page_data2.findAll("section",
-        # {"class":"solicitor solicitor-type-firm"})
-        # container=containers[0]
+
+        #get company webpage
+        containers = page_data2.findAll("section",
+        {"class":"solicitor solicitor-type-firm"})
+        container=containers[0]
         
-        # co_page = "https://solicitors.lawsociety.org.uk"+ container.findAll('a')[0].get('href')
-        # co_page_data = urlreader_to_soup(co_page)
-        # SRA_ box = 
-            
-            
-            
-            
-        # solicitor pages numbers count
-         solic_linkpage = "https://solicitors.lawsociety.org.uk"+container.findAll('a')[2].get('href')
-         print(solic_linkpage)
-         solic_data2page = urlreader_to_soup(solic_linkpage)
-         
-         page_nos = int(solic_data2page.find("div", {"class":"row-fluid"}).h1.strong.text)//20 + 2
-         print("total solicitor pages: " + str(page_nos - 1))
-         
-             #open and parse each page containing multiple solicitors 
+        #open company webpage
+        co_page = "https://solicitors.lawsociety.org.uk"+ container.findAll('a')[0].get('href')
+        co_page_data = urlreader_to_soup(co_page)
+        table_rows = co_page_data.findAll("div", {"class":"panel-third"})
+        SRA_link = "https://solicitors.lawsociety.org.uk"+ table_rows[0].findAll("a")[2].get('href')
+                    
+        #open SRA page 
+        SRA_page_data = urlreader_to_soup(SRA_link)
+        
+        
+        '''
+        Need to loop through SRA
+        open each page
+        check for COFA
+        '''
+        
+        #open and parse each page containing multiple solicitors 
          COFA_found = False
          for solic_page_nos in range(1,page_nos):
              if COFA_found == True:
