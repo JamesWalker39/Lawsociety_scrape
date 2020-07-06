@@ -7,10 +7,18 @@ import sys
 from bs4 import BeautifulSoup as soup
 from IPython.core.display import clear_output
 
+# Funtion to open page and soup parse
+def urlreader_to_soup(url):
+    webpage = urlopen(url)
+    webpagedata = webpage.read()
+    webpage.close()
+    pagedata_name = soup(webpagedata, "html.parser")
+    return pagedata_name
+    
 #location = sys.argv[1]
 location = "bristol"
 
-# Creating CSV for docs
+# Creating CSV for details to be written too 
 filename = "SolicitorsDetails.csv"
 f = open(filename , "w")
 headers = "Company_Name,Address,Telephone,Num_Offices,Num_Solicitors,Num_Accreditations,COFA\n" 
@@ -18,10 +26,7 @@ f.write(headers)
 
 # get page count
 my_url = "https://solicitors.lawsociety.org.uk/search/results?Location="+ location + "&Pro=False&Page=1"
-website = urlopen(my_url) # calling urlopen to request site
-page_html = website.read() # connection grabbing the page
-website.close() # close the client
-page_data = soup(page_html,"html.parser") # file name and html parse
+page_data = urlreader_to_soup(my_url)
 
 #find number of results
 noResults = page_data.findAll("strong")
@@ -32,15 +37,12 @@ print("total companies pages:" + str(pages))
 start_time = time()
 requests = 0
 
-#Loop through pages of compfanies 
+#Loop through pages of companies 
 for pagenumber in range (1,pages):
     myurl_2 = "https://solicitors.lawsociety.org.uk/search/results?Location="+ location + "&Pro=False&Page=" + str(pagenumber)
-    website = urlopen(myurl_2)
-    page_html2 = website.read()
-    website.close()
-    page_data2 = soup(page_html2,"html.parser") # file name and html parse
+    page_data2 = urlreader_to_soup(myurl_2) # file name and html parse
     
-    #define each productgrabs each product
+    #define each product,grabs each product
     containers = page_data2.findAll("section",
                                    {"class":"solicitor solicitor-type-firm"})
     print("company page of results:" + str(pagenumber))
@@ -62,15 +64,13 @@ for pagenumber in range (1,pages):
              noAccreds = container.find("div", {"class":"accreditations hidden-phone"}).strong.text
          except:
              noAccreds = "no accreditations given"
-        
+             
+             
         # solicitor pages numbers count
          solic_linkpage = "https://solicitors.lawsociety.org.uk"+container.findAll('a')[2].get('href')
-         #print(solic_linkpage)
+         print(solic_linkpage)
+         solic_data2page = urlreader_to_soup(solic_linkpage)
          
-         solic_webpage = urlopen(solic_linkpage)
-         solic_datapage = solic_webpage.read()
-         solic_webpage.close()
-         solic_data2page = soup(solic_datapage, "html.parser")
          page_nos = int(solic_data2page.find("div", {"class":"row-fluid"}).h1.strong.text)//20 + 2
          print("total solicitor pages: " + str(page_nos - 1))
          
@@ -82,11 +82,7 @@ for pagenumber in range (1,pages):
              else:
                  solic_link = "https://solicitors.lawsociety.org.uk" + container.findAll('a')[2].get('href') + "&Page=" + str(solic_page_nos)
                  print("solicitor page: " + str(solic_page_nos))
-                 
-                 solic_web = urlopen(solic_link)
-                 solic_data = solic_web.read()
-                 solic_web.close()
-                 solic_data2 = soup(solic_data, "html.parser")       
+                 solic_data2 = urlreader_to_soup(solic_link)    
                  
                  #solicitors containers for each name to run through
                  solic_containers = solic_data2.findAll("section")
@@ -97,10 +93,7 @@ for pagenumber in range (1,pages):
                      #print(indiv_link)
                      
                      #Open each solicitor link showing roles
-                     cofa_web = urlopen(indiv_link)
-                     cofa_data = cofa_web.read()
-                     cofa_web.close()
-                     cofa_data2 = soup(cofa_data,"html.parser")
+                     cofa_data2 = urlreader_to_soup(indiv_link)
         
                      
                      #define role table and iterate through roles to find COFA
