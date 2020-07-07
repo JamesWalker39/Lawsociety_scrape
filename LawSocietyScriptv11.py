@@ -6,6 +6,7 @@ from time import time
 import sys
 from bs4 import BeautifulSoup as soup
 from IPython.core.display import clear_output
+import gzip
 
 # Funtion to open page and soup parse
 def urlreader_to_soup(url):
@@ -35,7 +36,7 @@ pages = (int(count)//20) + 2
 print("total companies pages:" + str(pages))
 
 start_time = time()
-requests = 0
+request_no = 0
 
 #Loop through pages of companies 
 for pagenumber in range (1,pages):
@@ -49,35 +50,45 @@ for pagenumber in range (1,pages):
 
     # loop through details for each company
     for container in containers: 
-         requests += 1
+        request_no += 1
          #monitor requests
-         elapsed_time = time () - start_time
-         print('Request:{}; Frequency: {} requests/s'.format(requests, requests/elapsed_time))
-         clear_output(wait = True)
+        elapsed_time = time () - start_time
+        print('Request:{}; Frequency: {} requests/s'.format(request_no, request_no/elapsed_time))
+        clear_output(wait = True)
         
-         name = container.h2.text
-         address = container.find("dd").text
-         tel = container.find("dd", attrs = {"class":"hidden-phone"})
-         officeno = container.find("p", {"class":"hidden-phone"}).a.text
-         solicno = container.find("p", {"class":"hidden-phone"}).span.a.strong.text
-         try:
-             noAccreds = container.find("div", {"class":"accreditations hidden-phone"}).strong.text
-         except:
-             noAccreds = "no accreditations given"
+        name = container.h2.text
+        address = container.find("dd").text
+        tel = container.find("dd", attrs = {"class":"hidden-phone"})
+        officeno = container.find("p", {"class":"hidden-phone"}).a.text
+        solicno = container.find("p", {"class":"hidden-phone"}).span.a.strong.text
+        try:
+            noAccreds = container.find("div", {"class":"accreditations hidden-phone"}).strong.text
+        except:
+            noAccreds = "no accreditations given"
 
         #get company webpage
-        containers = page_data2.findAll("section",
-        {"class":"solicitor solicitor-type-firm"})
-        container=containers[0]
+        # company_containers = page_data2.findAll("section",
+        # {"class":"solicitor solicitor-type-firm"})
+        # co_container=company_containers[0]
         
         #open company webpage
         co_page = "https://solicitors.lawsociety.org.uk"+ container.findAll('a')[0].get('href')
+        print("opened: " + co_page)
         co_page_data = urlreader_to_soup(co_page)
         table_rows = co_page_data.findAll("div", {"class":"panel-third"})
         SRA_link = "https://solicitors.lawsociety.org.uk"+ table_rows[0].findAll("a")[2].get('href')
                     
         #open SRA page 
         SRA_page_data = urlreader_to_soup(SRA_link)
+        print("opened: " + SRA_link)
+        
+        #find SRA data, loop, open page and check COFA
+        for SRA in SRA_page_data.findAll("h2"):
+            COFA_page_link = "https://solicitors.lawsociety.org.uk"+ SRA.a.get("href")
+            print(COFA_page_link)
+            COFA_page = requests.get(str(COFA_page_link)).text
+            COFA_page_data = soup(COFA_page,"html.parser")    
+                    
         
         
         '''
@@ -86,78 +97,79 @@ for pagenumber in range (1,pages):
         check for COFA
         '''
         
-        #open and parse each page containing multiple solicitors 
-         COFA_found = False
-         for solic_page_nos in range(1,page_nos):
-             if COFA_found == True:
-                 break
-             else:
-                 solic_link = "https://solicitors.lawsociety.org.uk" + container.findAll('a')[2].get('href') + "&Page=" + str(solic_page_nos)
-                 print("solicitor page: " + str(solic_page_nos))
-                 solic_data2 = urlreader_to_soup(solic_link)    
+        #open and parse each page containing multiple solicitors
+        COFA = COFA_page_link        # COFA_found = False
+        # for solic_page_nos in range(1,page_nos):
+        #     if COFA_found == True:
+        #         break
+        #     else:
+        #         solic_link = "https://solicitors.lawsociety.org.uk" + container.findAll('a')[2].get('href') + "&Page=" + str(solic_page_nos)
+        #         print("solicitor page: " + str(solic_page_nos))
+        #         solic_data2 = urlreader_to_soup(solic_link)    
                  
-                 #solicitors containers for each name to run through
-                 solic_containers = solic_data2.findAll("section")
+        #          #solicitors containers for each name to run through
+        #         solic_containers = solic_data2.findAll("section")
     
-                 #find each solicotor links
-                 for s_cont in solic_containers:
-                     indiv_link = "https://solicitors.lawsociety.org.uk"+s_cont.header.h2.a.get("href")
-                     #print(indiv_link)
+        #          #find each solicotor links
+        #         for s_cont in solic_containers:
+        #             indiv_link = "https://solicitors.lawsociety.org.uk"+s_cont.header.h2.a.get("href")
+        #              #print(indiv_link)
                      
-                     #Open each solicitor link showing roles
-                     cofa_data2 = urlreader_to_soup(indiv_link)
+        #              #Open each solicitor link showing roles
+        #             cofa_data2 = urlreader_to_soup(indiv_link)
         
                      
-                     #define role table and iterate through roles to find COFA
-                     role_list = cofa_data2.findAll("li")
-                     for role in role_list:
-                          if role.text == "Compliance Officer for Finance and Administration":
-                              COFA = (cofa_data2.find("h1")).text
-                              COFA_found = True
-                          else:
-                              pass
+        #              #define role table and iterate through roles to find COFA
+        #             role_list = cofa_data2.findAll("li")
+        #             for role in role_list:
+        #                  if role.text == "Compliance Officer for Finance and Administration":
+        #                      COFA = (cofa_data2.find("h1")).text
+        #                      COFA_found = True
+        #                  else:
+        #                      pass
                  
                                                     
          # prints to check  
-         print("Firm Name: " + name)
-         print("Address: " + address)
+        print("Firm Name: " + name)
+        print("Address: " + address)
          
-         try:
-            print ("Telephone: " + str(tel.text))
-            print_tel= tel.text
-         except:
-            print ("No telephone number")
-            print_tel = ("No telephone number")
+        try:
+           print ("Telephone: " + str(tel.text))
+           print_tel= tel.text
+        except:
+           print ("No telephone number")
+           print_tel = ("No telephone number")
             
-         try:
-            print ("Number of offices: " + officeno.strip())
+        try:
+           print ("Number of offices: " + officeno.strip())
             
-         except:
-            print ("No office data given")
-            officeno = ("No office data given")
-         try:
-            print ("Number of solicitors: " + solicno.strip())
-         except:
-            print ("No solictor numbers given")
-            solicno = ("No solictor numbers given")
+        except:
+           print ("No office data given")
+           officeno = ("No office data given")
+        try:
+           print ("Number of solicitors: " + solicno.strip())
+        except:
+           print ("No solictor numbers given")
+           solicno = ("No solictor numbers given")
             
-         try:
-            print ("Number of accreditations: " + noAccreds.strip())
-         except:
-            print("number of accreditations not given")
+        try:
+           print ("Number of accreditations: " + noAccreds.strip())
+        except:
+           print("number of accreditations not given")
            
-         if COFA == "":
-            print("No COFA")
-            COFA = "No COFA"
-         else:        
-             try:
-                print("The Compliance Officer for Finance and Administration is: " + COFA )
-             except:
-                print("There is no COFA")
+        if COFA == "":
+           print("No COFA")
+           COFA = "No COFA"
+        else:        
+            try:
+               print("The Compliance Officer for Finance and Administration is: " + COFA )
+            except:
+               print("There is no COFA")
+               
         
-         
+        print("\n\n")
     # write to csv
-         f.write("'"+ name + "," + address.replace(",",".") + "," + "'" + print_tel + "," + officeno.strip() + "," + solicno.strip() + "," + noAccreds.strip() + "," + COFA + "\n")
-         sleep(1)
-         COFA = ""
+        f.write("'"+ name + "," + address.replace(",",".") + "," + "'" + print_tel + "," + officeno.strip() + "," + solicno.strip() + "," + noAccreds.strip() + "," + COFA + "\n")
+        sleep(1)
+        COFA = ""
 f.close()
