@@ -5,8 +5,6 @@ from time import sleep
 from time import time
 import sys
 from bs4 import BeautifulSoup as soup
-from IPython.core.display import clear_output
-import gzip
 
 # Funtion to open page and soup parse
 def urlreader_to_soup(url):
@@ -33,7 +31,7 @@ page_data = urlreader_to_soup(my_url)
 noResults = page_data.findAll("strong")
 count = noResults[0].text
 pages = (int(count)//20) + 2
-print("total companies pages:" + str(pages))
+print("total companies pages:" + str(pages)+ "\n")
 
 start_time = time()
 request_no = 0
@@ -46,15 +44,14 @@ for pagenumber in range (1,pages):
     #define each product,grabs each product
     containers = page_data2.findAll("section",
                                    {"class":"solicitor solicitor-type-firm"})
-    print("company page of results:" + str(pagenumber))
+    print("company page of results:" + str(pagenumber) +"\n")
 
     # loop through details for each company
     for container in containers: 
         request_no += 1
          #monitor requests
         elapsed_time = time () - start_time
-        print('Request:{}; Frequency: {} requests/s'.format(request_no, request_no/elapsed_time))
-        clear_output(wait = True)
+        print('Request:{}; Frequency: {} requests/s \n'.format(request_no, request_no/elapsed_time))
         
         name = container.h2.text
         address = container.find("dd").text
@@ -66,70 +63,40 @@ for pagenumber in range (1,pages):
         except:
             noAccreds = "no accreditations given"
 
-        #get company webpage
-        # company_containers = page_data2.findAll("section",
-        # {"class":"solicitor solicitor-type-firm"})
-        # co_container=company_containers[0]
-        
-        #open company webpage
+        #get + open company webpage
         co_page = "https://solicitors.lawsociety.org.uk"+ container.findAll('a')[0].get('href')
-        print("opened: " + co_page)
+        print("opened: " + co_page + "\n")
         co_page_data = urlreader_to_soup(co_page)
         table_rows = co_page_data.findAll("div", {"class":"panel-third"})
         SRA_link = "https://solicitors.lawsociety.org.uk"+ table_rows[0].findAll("a")[2].get('href')
                     
+        '''
+        Need to loop through SRA pages
+        '''
+        
         #open SRA page 
         SRA_page_data = urlreader_to_soup(SRA_link)
-        print("opened: " + SRA_link)
+        print("opened: " + SRA_link + "\n")
         
-        #find SRA data, loop, open page and check COFA
+        #find SRA data, loop, open page and check COFA - requests used as bytes
         for SRA in SRA_page_data.findAll("h2"):
             COFA_page_link = "https://solicitors.lawsociety.org.uk"+ SRA.a.get("href")
-            print(COFA_page_link)
             COFA_page = requests.get(str(COFA_page_link)).text
-            COFA_page_data = soup(COFA_page,"html.parser")    
-                    
-        
-        
-        '''
-        Need to loop through SRA
-        open each page
-        check for COFA
-        '''
-        
-        #open and parse each page containing multiple solicitors
-        COFA = COFA_page_link        # COFA_found = False
-        # for solic_page_nos in range(1,page_nos):
-        #     if COFA_found == True:
-        #         break
-        #     else:
-        #         solic_link = "https://solicitors.lawsociety.org.uk" + container.findAll('a')[2].get('href') + "&Page=" + str(solic_page_nos)
-        #         print("solicitor page: " + str(solic_page_nos))
-        #         solic_data2 = urlreader_to_soup(solic_link)    
-                 
-        #          #solicitors containers for each name to run through
-        #         solic_containers = solic_data2.findAll("section")
-    
-        #          #find each solicotor links
-        #         for s_cont in solic_containers:
-        #             indiv_link = "https://solicitors.lawsociety.org.uk"+s_cont.header.h2.a.get("href")
-        #              #print(indiv_link)
-                     
-        #              #Open each solicitor link showing roles
-        #             cofa_data2 = urlreader_to_soup(indiv_link)
-        
-                     
-        #              #define role table and iterate through roles to find COFA
-        #             role_list = cofa_data2.findAll("li")
-        #             for role in role_list:
-        #                  if role.text == "Compliance Officer for Finance and Administration":
-        #                      COFA = (cofa_data2.find("h1")).text
-        #                      COFA_found = True
-        #                  else:
-        #                      pass
-                 
+            print()
+            COFA_page_data = soup(COFA_page,"html.parser")
+            try:
+                COFA_table = COFA_page_data.findAll("div", {"class":"panel-half"})[1].dd.ul.findAll("li")
+                COFA_found = False
+                for i in COFA_table:
+                    if i.text == "Compliance Officer for Finance and Administration":
+                        COFA_found = True
+                        COFA = COFA_page_data.h1.text
+                        break
+            except:
+                print("Non conforming page layout")
+
                                                     
-         # prints to check  
+        # prints to check  
         print("Firm Name: " + name)
         print("Address: " + address)
          
@@ -167,7 +134,7 @@ for pagenumber in range (1,pages):
                print("There is no COFA")
                
         
-        print("\n\n")
+        print("\n\n" + "--------------NEW COMPANY------------" + "\n\n")
     # write to csv
         f.write("'"+ name + "," + address.replace(",",".") + "," + "'" + print_tel + "," + officeno.strip() + "," + solicno.strip() + "," + noAccreds.strip() + "," + COFA + "\n")
         sleep(1)
