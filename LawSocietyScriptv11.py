@@ -14,8 +14,8 @@ def urlreader_to_soup(url):
     pagedata_name = soup(webpagedata, "html.parser")
     return pagedata_name
     
-#location = sys.argv[1]
-location = "bristol"
+# location = sys.argv[1]
+location = "Gloucester"
 
 # Creating CSV for details to be written too 
 filename = "Solicitors_Details_"+location+".csv"
@@ -71,39 +71,39 @@ for pagenumber in range (1,pages):
         table_rows = co_page_data.findAll("div", {"class":"panel-third"})
         try:
             SRA_link = "https://solicitors.lawsociety.org.uk"+ table_rows[1].findAll("a")[2].get('href')
-        except:
-            break
+        
                     
-        #open SRA page 
-        SRA_page_data = urlreader_to_soup(SRA_link)
-        print("opened: " + SRA_link + "\n")
-        No_SRA = SRA_page_data.find("h1").strong.text
-        SRA_pages = (int(No_SRA)//20) + 2
-        COFA = ""
-        
-        for SRApagenumber in range (1,SRA_pages):
-            SRA_page_data_loop = "https://solicitors.lawsociety.org.uk"+ table_rows[1].findAll("a")[2].get('href')+"&Page="+ str(SRApagenumber)
-            print("opened: " + SRA_page_data_loop + "\n")
-            SRA_currentpage = urlreader_to_soup(SRA_page_data_loop)
-        
-        #find SRA data, loop, open page and check COFA - requests used as bytes
-            for SRA in SRA_currentpage.findAll("h2"):
-                COFA_page_link = "https://solicitors.lawsociety.org.uk"+ SRA.a.get("href")
-                print(COFA_page_link)
-                COFA_page = requests.get(str(COFA_page_link)).text
-                COFA_page_data = soup(COFA_page,"html.parser")
-                try:
-                    COFA_table = COFA_page_data.findAll("div", {"class":"panel-half"})[1].dd.ul.findAll("li")
-                    COFA_found = False
-                    for i in COFA_table:
-                        if i.text == "Compliance Officer for Finance and Administration":
-                            COFA_found = True
-                            COFA = COFA_page_data.h1.text
-                            break
-                except:
-                    print("Non conforming page layout")
-                print("Checking COFA: "+ COFA_page_data.h1.text + "\n")
-
+            #open SRA page 
+            SRA_page_data = urlreader_to_soup(SRA_link)
+            print("opened: " + SRA_link + "\n")
+            No_SRA = SRA_page_data.find("h1").strong.text
+            SRA_pages = (int(No_SRA)//20) + 2
+            COFA = ""
+            
+            for SRApagenumber in range (1,SRA_pages):
+                SRA_page_data_loop = "https://solicitors.lawsociety.org.uk"+ table_rows[1].findAll("a")[2].get('href')+"&Page="+ str(SRApagenumber)
+                print("opened: " + SRA_page_data_loop + "\n")
+                SRA_currentpage = urlreader_to_soup(SRA_page_data_loop)
+            
+            #find SRA data, loop, open page and check COFA - requests used as bytes
+                for SRA in SRA_currentpage.findAll("h2"):
+                    COFA_page_link = "https://solicitors.lawsociety.org.uk"+ SRA.a.get("href")
+                    print(COFA_page_link)
+                    COFA_page = requests.get(str(COFA_page_link)).text
+                    COFA_page_data = soup(COFA_page,"html.parser")
+                    try:
+                        COFA_table = COFA_page_data.findAll("div", {"class":"panel-half"})[1].dd.ul.findAll("li")
+                        COFA_found = False
+                        for i in COFA_table:
+                            if i.text == "Compliance Officer for Finance and Administration":
+                                COFA_found = True
+                                COFA = COFA_page_data.h1.text
+                                break
+                    except:
+                        print("Non conforming page layout")
+                    print("Checking COFA: "+ COFA_page_data.h1.text + "\n")
+        except:
+            COFA = ""
                                                     
         # prints to check  
         print("Firm Name: " + name)
